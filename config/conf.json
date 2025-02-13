@@ -1,0 +1,23 @@
+{
+  "port": ":8080",
+  "name": "ai-service",
+  "ollama": {
+    "url": "",
+    "endpoints": {
+      "embeddings": "",
+      "chat": ""
+    },
+    "timeout": "60s"
+  },
+  "milvus": {
+    "host": "localhost",
+    "port": "5432",
+    "user": "postgres",
+    "pass": "postgres",
+    "dbname": "postgres",
+    "search_path": "public",
+    "idle_conns": 10,
+    "open_conns": 10,
+    "driver_name": "postgres"
+  }
+}
