@@ -1,17 +1,14 @@
 package ollama
 
 import (
-	"ai-service/internal/repository/milvus"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
-	"io"
 	"net/http"
 )
 
 func (l *llmService) Answer(docEmbeds []float32, messages []Message) (*ChatResponse, error) {
-	searchResult, err := milvus.GetTopK(*l.milvus, 5, docEmbeds)
+	searchResult, err := l.repository.Vector.GetTopK(5, docEmbeds)
 	if err != nil {
 		return nil, err
 	}

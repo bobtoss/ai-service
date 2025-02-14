@@ -1,12 +1,11 @@
 package ollama
 
 import (
+	"ai-service/internal/repository"
 	"ai-service/internal/util/config"
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"io/ioutil"
 	"net/http"
 )
@@ -22,18 +21,12 @@ type LLMService interface {
 }
 
 type llmService struct {
-	config *config.Config
-	milvus *client.Client
-	client *http.Client
+	config     *config.Config
+	repository *repository.Repository
+	client     *http.Client
 }
 
-func NewLLMService(ctx context.Context, cfg *config.Config) (LLMService, error) {
-	milvus, err := client.NewClient(ctx, client.Config{Address: cfg.Milvus.Host})
-	if err != nil {
-		return nil, err
-	}
-	defer milvus.Close()
-
+func NewLLMService(cfg *config.Config, repo *repository.Repository) (LLMService, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -41,9 +34,9 @@ func NewLLMService(ctx context.Context, cfg *config.Config) (LLMService, error) 
 	httpClient.Timeout = cfg.Ollama.Timeout
 
 	return &llmService{
-		config: cfg,
-		milvus: &milvus,
-		client: httpClient,
+		config:     cfg,
+		repository: repo,
+		client:     httpClient,
 	}, nil
 }
 

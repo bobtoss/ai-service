@@ -1,10 +1,10 @@
 package doc
 
 import (
+	"ai-service/internal/repository"
 	"ai-service/internal/service/ollama"
 	"ai-service/internal/util/config"
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"github.com/labstack/echo"
@@ -29,8 +29,8 @@ type docService struct {
 	client *http.Client
 }
 
-func NewDocService(ctx context.Context, cfg *config.Config) (DocService, error) {
-	llm, err := ollama.NewLLMService(ctx, cfg)
+func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService, error) {
+	llm, err := ollama.NewLLMService(cfg, repo)
 	if err != nil {
 		return nil, err
 	}
