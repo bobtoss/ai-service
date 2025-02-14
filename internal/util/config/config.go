@@ -25,6 +25,7 @@ type Config struct {
 }
 
 type Ollama struct {
+	Model     string            `json:"model"`
 	Url       string            `json:"url"`
 	Endpoints map[string]string `json:"endpoints"`
 	Timeout   time.Duration     `json:"timeout"`

@@ -2,7 +2,8 @@
   "port": ":8080",
   "name": "ai-service",
   "ollama": {
-    "url": "",
+    "model": "",
+    "url": "localhost:11434",
     "endpoints": {
       "embeddings": "",
       "chat": ""
