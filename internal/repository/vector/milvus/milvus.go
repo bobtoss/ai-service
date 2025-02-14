@@ -23,7 +23,7 @@ func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.Vector
 	return &Repository{milvus: milvus}, nil
 }
 
-func (r Repository) GetTopK(k int, search []float32) ([]client.SearchResult, error) {
+func (r Repository) GetTopK(ctx context.Context, k int, search []float32) ([]client.SearchResult, error) {
 	sp, _ := entity.NewIndexIvfFlatSearchParam( // NewIndex*SearchParam func
 		10, // searchParam
 	)
@@ -34,11 +34,11 @@ func (r Repository) GetTopK(k int, search []float32) ([]client.SearchResult, err
 		option.IgnoreGrowing = false
 	})
 	searchResult, err := r.milvus.Search(
-		context.Background(), // ctx
-		"yandex_gpt",         // CollectionName
-		[]string{},           // partitionNames
-		"",                   // expr
-		[]string{"text"},     // outputFields
+		ctx,              // ctx
+		"yandex_gpt",     // CollectionName
+		[]string{},       // partitionNames
+		"",               // expr
+		[]string{"text"}, // outputFields
 		[]entity.Vector{entity.FloatVector(search)}, // vectors
 		"embedding", // vectorField
 		entity.L2,   // metricType
@@ -53,12 +53,21 @@ func (r Repository) GetTopK(k int, search []float32) ([]client.SearchResult, err
 	return searchResult, err
 }
 
-func (r Repository) DeleteDoc(id string) error {
-	//TODO implement me
-	panic("implement me")
+func (r Repository) DeleteDoc(ctx context.Context, id string) error {
+	expr := fmt.Sprintf("doc_id == %s", id)
+	err := r.milvus.Delete(
+		ctx,    // ctx
+		"book", // collection name
+		"",     // partition name
+		expr,   // expr
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r Repository) SaveDoc(chunks []string, embeddings [][]float32) error {
+func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][]float32) error {
 	ids := make([]int64, len(embeddings))
 	schema := &entity.Schema{
 		CollectionName: "yandex_gpt",
@@ -90,7 +99,7 @@ func (r Repository) SaveDoc(chunks []string, embeddings [][]float32) error {
 		EnableDynamicField: true,
 	}
 	err := r.milvus.CreateCollection(
-		context.Background(), // ctx
+		ctx, // ctx
 		schema,
 		2, // shardNum
 	)
@@ -101,10 +110,10 @@ func (r Repository) SaveDoc(chunks []string, embeddings [][]float32) error {
 	textColumn := entity.NewColumnVarChar("text", chunks)
 	embeddingColumn := entity.NewColumnFloatVector("embedding", 256, embeddings)
 	_, err = r.milvus.Insert(
-		context.Background(), // ctx
-		"yandex_gpt",         // CollectionName
-		"",                   // partitionName
-		idColumn,             // columnarData
+		ctx,          // ctx
+		"yandex_gpt", // CollectionName
+		"",           // partitionName
+		idColumn,     // columnarData
 		textColumn,
 		embeddingColumn, // columnarData
 	)
@@ -120,19 +129,19 @@ func (r Repository) SaveDoc(chunks []string, embeddings [][]float32) error {
 		return err
 	}
 	err = r.milvus.CreateIndex(
-		context.Background(), // ctx
-		"yandex_gpt",         // CollectionName
-		"embedding",          // fieldName
-		idx,                  // entity.Index
-		false,                // async
+		ctx,          // ctx
+		"yandex_gpt", // CollectionName
+		"embedding",  // fieldName
+		idx,          // entity.Index
+		false,        // async
 	)
 	if err != nil {
 		return err
 	}
 	err = r.milvus.LoadCollection(
-		context.Background(), // ctx
-		"yandex_gpt",         // CollectionName
-		false,                // async
+		ctx,          // ctx
+		"yandex_gpt", // CollectionName
+		false,        // async
 	)
 	return nil
 }
