@@ -1,18 +1,21 @@
 package repository
 
 import (
-	milvusRepo "ai-service/internal/repository/milvus"
+	"ai-service/internal/repository/vector"
+	milvusRepo "ai-service/internal/repository/vector/milvus"
 	"ai-service/internal/util/config"
 	"context"
-	"github.com/milvus-io/milvus-sdk-go/v2/client"
 )
 
-type VectorDB interface {
-	GetTopK(k int, search []float32) ([]client.SearchResult, error)
-	DeleteDoc(id string) error
-	SaveDoc(embeddings [][]float32) error
+type Repository struct {
+	Vector vector.VectorDB
 }
 
-func New(ctx context.Context, cfg *config.Config) (VectorDB, error) {
-	return milvusRepo.NewMilvusRepository(ctx, cfg)
+func New(ctx context.Context, cfg *config.Config) (*Repository, error) {
+	vector, err := milvusRepo.NewMilvusRepository(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repository{Vector: vector}, nil
 }

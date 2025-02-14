@@ -1,7 +1,7 @@
 package milvus
 
 import (
-	"ai-service/internal/repository"
+	"ai-service/internal/repository/vector"
 	"ai-service/internal/util/config"
 	"context"
 	"fmt"
@@ -13,12 +13,13 @@ type Repository struct {
 	milvus client.Client
 }
 
-func NewMilvusRepository(ctx context.Context, cfg *config.Config) (repository.VectorDB, error) {
+func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.VectorDB, error) {
 	milvus, err := client.NewClient(ctx, client.Config{Address: cfg.Milvus.Host})
 	if err != nil {
 		return nil, err
 	}
 	defer milvus.Close()
+
 	return &Repository{milvus: milvus}, nil
 }
 
@@ -50,11 +51,6 @@ func (r Repository) GetTopK(k int, search []float32) ([]client.SearchResult, err
 		fmt.Println(sr.Fields.GetColumn("text"))
 	}
 	return searchResult, err
-}
-
-func (r repository.Repository) GetTopK(k int, search []float32) ([]client.SearchResult, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (r Repository) DeleteDoc(id string) error {
