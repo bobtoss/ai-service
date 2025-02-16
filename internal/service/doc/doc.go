@@ -1,6 +1,7 @@
 package doc
 
 import (
+	"ai-service/internal/repository"
 	"ai-service/internal/service/doc/models"
 	"ai-service/internal/util/errors"
 	"github.com/labstack/echo"
@@ -37,12 +38,17 @@ func (d *docService) SaveDoc(c echo.Context) error {
 // @Failure	500				{object}	status.SaveDoc
 // @Router /api/v1/document/{id} 	[delete]
 func (d *docService) DeleteDoc(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
 	var dataReq models.DeleteDoc
 	if err := c.Bind(&dataReq); err != nil {
 		return errors.NewBadRequestErrorRsp(err.Error())
 	}
-	response := models.SaveDocResponse{Status: true}
-	return c.JSON(http.StatusOK, response)
+	err := d.repository.Vector.DeleteDoc(ctx, id)
+	if err != nil {
+		return errors.NewInternalErrorRsp(err.Error())
+	}
+	return c.JSON(http.StatusOK, nil)
 }
 
 // UpdatePriority

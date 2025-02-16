@@ -24,9 +24,10 @@ type DocService interface {
 }
 
 type docService struct {
-	config *config.Config
-	llm    ollama.LLMService
-	client *http.Client
+	config     *config.Config
+	llm        ollama.LLMService
+	repository *repository.Repository
+	client     *http.Client
 }
 
 func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService, error) {
@@ -41,9 +42,10 @@ func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService,
 	httpClient.Timeout = cfg.Ollama.Timeout
 
 	return &docService{
-		config: cfg,
-		llm:    llm,
-		client: httpClient,
+		config:     cfg,
+		repository: repo,
+		llm:        llm,
+		client:     httpClient,
 	}, nil
 }
 
