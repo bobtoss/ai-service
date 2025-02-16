@@ -23,7 +23,7 @@ func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.Vector
 	return &Repository{milvus: milvus}, nil
 }
 
-func (r Repository) GetTopK(ctx context.Context, k int, search []float32) ([]client.SearchResult, error) {
+func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []float32) ([]client.SearchResult, error) {
 	sp, _ := entity.NewIndexIvfFlatSearchParam( // NewIndex*SearchParam func
 		10, // searchParam
 	)
@@ -35,7 +35,7 @@ func (r Repository) GetTopK(ctx context.Context, k int, search []float32) ([]cli
 	})
 	searchResult, err := r.milvus.Search(
 		ctx,              // ctx
-		"yandex_gpt",     // CollectionName
+		orgID,            // CollectionName
 		[]string{},       // partitionNames
 		"",               // expr
 		[]string{"text"}, // outputFields
@@ -53,7 +53,7 @@ func (r Repository) GetTopK(ctx context.Context, k int, search []float32) ([]cli
 	return searchResult, err
 }
 
-func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][]float32) error {
+func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][]float32) error {
 	ids := make([]int64, len(embeddings))
 	schema := &entity.Schema{
 		CollectionName: "yandex_gpt",
@@ -96,10 +96,10 @@ func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][
 	textColumn := entity.NewColumnVarChar("text", chunks)
 	embeddingColumn := entity.NewColumnFloatVector("embedding", 256, embeddings)
 	_, err = r.milvus.Insert(
-		ctx,          // ctx
-		"yandex_gpt", // CollectionName
-		"",           // partitionName
-		idColumn,     // columnarData
+		ctx,      // ctx
+		orgID,    // CollectionName
+		"",       // partitionName
+		idColumn, // columnarData
 		textColumn,
 		embeddingColumn, // columnarData
 	)
@@ -132,13 +132,13 @@ func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][
 	return nil
 }
 
-func (r Repository) DeleteDoc(ctx context.Context, id string) error {
+func (r Repository) DeleteDoc(ctx context.Context, orgID string, id string) error {
 	expr := fmt.Sprintf("doc_id == %s", id)
 	err := r.milvus.Delete(
-		ctx,    // ctx
-		"book", // collection name
-		"",     // partition name
-		expr,   // expr
+		ctx,   // ctx
+		orgID, // collection name
+		"",    // partition name
+		expr,  // expr
 	)
 	if err != nil {
 		return err

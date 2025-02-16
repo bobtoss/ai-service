@@ -8,8 +8,8 @@ import (
 	"net/http"
 )
 
-func (l *llmService) Answer(ctx context.Context, docEmbeds []float32, messages []Message) (*ChatResponse, error) {
-	searchResult, err := l.repository.Vector.GetTopK(ctx, 5, docEmbeds)
+func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float32, messages []Message) (*ChatResponse, error) {
+	searchResult, err := l.repository.Vector.GetTopK(ctx, orgID, 5, docEmbeds)
 	if err != nil {
 		return nil, err
 	}
