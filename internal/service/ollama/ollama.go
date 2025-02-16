@@ -54,7 +54,7 @@ func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float
 	}
 }
 
-func (l *llmService) Embed(input string) ([][]float64, error) {
+func (l *llmService) Embed(input string) ([][]float32, error) {
 	req := EmbedRequest{
 		Model: l.config.Ollama.Model,
 		Input: input,

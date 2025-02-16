@@ -17,7 +17,7 @@ const (
 
 type LLMService interface {
 	Answer(docEmbeds []float32, messages []Message) (*ChatResponse, error)
-	Embed(input string) ([][]float64, error)
+	Embed(input string) ([][]float32, error)
 }
 
 type llmService struct {

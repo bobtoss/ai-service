@@ -49,13 +49,13 @@ func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService,
 	}, nil
 }
 
-func (l *docService) handler(method string, url string, req any) ([]byte, int, error) {
+func (d *docService) handler(method string, url string, req any) ([]byte, int, error) {
 	body, err := json.Marshal(req)
 
 	request, err := http.NewRequest(method, url, bytes.NewReader(body))
 	request.Header.Add("Content-Type", "application/json")
 
-	res, err := l.client.Do(request)
+	res, err := d.client.Do(request)
 	if err != nil {
 		return nil, 0, err
 	}

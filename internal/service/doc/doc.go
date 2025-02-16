@@ -1,8 +1,8 @@
 package doc
 
 import (
-	"ai-service/internal/repository"
 	"ai-service/internal/service/doc/models"
+	"ai-service/internal/util/doc"
 	"ai-service/internal/util/errors"
 	"github.com/labstack/echo"
 	"net/http"
@@ -19,9 +19,23 @@ import (
 // @Failure	500				{object}	status.SaveDoc
 // @Router /api/v1/document 	[post]
 func (d *docService) SaveDoc(c echo.Context) error {
+	ctx := c.Request().Context()
 	var dataReq models.SaveDoc
 	if err := c.Bind(&dataReq); err != nil {
 		return errors.NewBadRequestErrorRsp(err.Error())
+	}
+	encodedString, err := doc.DecodeBase64ToFileAndRead(dataReq.Document)
+	if err != nil {
+		return errors.NewInternalErrorRsp(err.Error())
+	}
+	embeddings, err := d.llm.Embed(encodedString)
+	if err != nil {
+		return errors.NewInternalErrorRsp(err.Error())
+	}
+	chunks := doc.TextToChunks(encodedString)
+	err = d.repository.Vector.SaveDoc(ctx, dataReq.CompanyId, chunks, embeddings)
+	if err != nil {
+		return errors.NewInternalErrorRsp(err.Error())
 	}
 	response := models.SaveDocResponse{Status: true}
 	return c.JSON(http.StatusOK, response)
@@ -44,7 +58,7 @@ func (d *docService) DeleteDoc(c echo.Context) error {
 	if err := c.Bind(&dataReq); err != nil {
 		return errors.NewBadRequestErrorRsp(err.Error())
 	}
-	err := d.repository.Vector.DeleteDoc(ctx, id)
+	err := d.repository.Vector.DeleteDoc(ctx, dataReq.OrgID, id)
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}

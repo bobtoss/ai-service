@@ -1,4 +1,4 @@
-package main
+package doc
 
 import (
 	"encoding/base64"
@@ -25,6 +25,10 @@ type WordXML struct {
 			} `xml:"r>t"`
 		} `xml:"body>p"`
 	} `xml:"body"`
+}
+
+func TextToChunks(input string) []string {
+	return make([]string, 0)
 }
 
 // DecodeBase64ToString декодирует base64 строку и возвращает обычную строку

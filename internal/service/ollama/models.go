@@ -37,7 +37,7 @@ type ChatResponse struct {
 
 type EmbeddingResponse struct {
 	Model           string      `json:"model"`
-	Embeddings      [][]float64 `json:"embeddings"`
+	Embeddings      [][]float32 `json:"embeddings"`
 	TotalDuration   int64       `json:"total_duration"`
 	LoadDuration    int64       `json:"load_duration"`
 	PromptEvalCount int         `json:"prompt_eval_count"`

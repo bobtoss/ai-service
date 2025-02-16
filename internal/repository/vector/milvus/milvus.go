@@ -56,7 +56,7 @@ func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []f
 func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][]float32) error {
 	ids := make([]int64, len(embeddings))
 	schema := &entity.Schema{
-		CollectionName: "yandex_gpt",
+		CollectionName: orgID,
 		Description:    "testing",
 		Fields: []*entity.Field{
 			{
@@ -103,7 +103,6 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 		textColumn,
 		embeddingColumn, // columnarData
 	)
-	fmt.Println(len(chunks), len(embeddings))
 	if err != nil {
 		return err
 	}
@@ -115,11 +114,11 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 		return err
 	}
 	err = r.milvus.CreateIndex(
-		ctx,          // ctx
-		"yandex_gpt", // CollectionName
-		"embedding",  // fieldName
-		idx,          // entity.Index
-		false,        // async
+		ctx,         // ctx
+		orgID,       // CollectionName
+		"embedding", // fieldName
+		idx,         // entity.Index
+		false,       // async
 	)
 	if err != nil {
 		return err
