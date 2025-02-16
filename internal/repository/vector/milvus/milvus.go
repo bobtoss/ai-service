@@ -53,20 +53,6 @@ func (r Repository) GetTopK(ctx context.Context, k int, search []float32) ([]cli
 	return searchResult, err
 }
 
-func (r Repository) DeleteDoc(ctx context.Context, id string) error {
-	expr := fmt.Sprintf("doc_id == %s", id)
-	err := r.milvus.Delete(
-		ctx,    // ctx
-		"book", // collection name
-		"",     // partition name
-		expr,   // expr
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][]float32) error {
 	ids := make([]int64, len(embeddings))
 	schema := &entity.Schema{
@@ -143,5 +129,19 @@ func (r Repository) SaveDoc(ctx context.Context, chunks []string, embeddings [][
 		"yandex_gpt", // CollectionName
 		false,        // async
 	)
+	return nil
+}
+
+func (r Repository) DeleteDoc(ctx context.Context, id string) error {
+	expr := fmt.Sprintf("doc_id == %s", id)
+	err := r.milvus.Delete(
+		ctx,    // ctx
+		"book", // collection name
+		"",     // partition name
+		expr,   // expr
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }

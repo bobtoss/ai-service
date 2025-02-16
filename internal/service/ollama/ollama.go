@@ -1,14 +1,15 @@
 package ollama
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
 )
 
-func (l *llmService) Answer(docEmbeds []float32, messages []Message) (*ChatResponse, error) {
-	searchResult, err := l.repository.Vector.GetTopK(5, docEmbeds)
+func (l *llmService) Answer(ctx context.Context, docEmbeds []float32, messages []Message) (*ChatResponse, error) {
+	searchResult, err := l.repository.Vector.GetTopK(ctx, 5, docEmbeds)
 	if err != nil {
 		return nil, err
 	}
