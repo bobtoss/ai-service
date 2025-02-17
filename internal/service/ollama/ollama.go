@@ -3,7 +3,6 @@ package ollama
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -16,7 +15,6 @@ func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float
 	var documents string
 	for _, result := range searchResult {
 		column := result.Fields.GetColumn("text")
-		fmt.Println(column)
 		for i := 0; i < column.Len(); i++ {
 			s, err := column.GetAsString(i)
 			if err != nil {
@@ -26,9 +24,8 @@ func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float
 		}
 	}
 	messages = append(messages, Message{
-		Role: "system",
-		Content: "Вот текст документа, который ты должен использовать для ответа:" +
-			documents,
+		Role:    role,
+		Content: system_prompt + documents,
 	})
 	chatRequest := ChatRequest{
 		Model:    l.config.Ollama.Model,

@@ -4,6 +4,7 @@ import (
 	"ai-service/internal/repository"
 	"ai-service/internal/util/config"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
@@ -11,12 +12,14 @@ import (
 )
 
 const (
-	chat  = "/api/chat"
-	embed = "/api/embed"
+	chat          = "/api/chat"
+	embed         = "/api/embed"
+	role          = "system"
+	system_prompt = "Вот текст документа, который ты должен использовать для ответа: "
 )
 
 type LLMService interface {
-	Answer(docEmbeds []float32, messages []Message) (*ChatResponse, error)
+	Answer(ctx context.Context, orgID string, docEmbeds []float32, messages []Message) (*ChatResponse, error)
 	Embed(input string) ([][]float32, error)
 }
 
