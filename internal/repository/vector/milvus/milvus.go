@@ -55,35 +55,7 @@ func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []f
 
 func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][]float32) error {
 	ids := make([]int64, len(embeddings))
-	schema := &entity.Schema{
-		CollectionName: orgID,
-		Description:    "testing",
-		Fields: []*entity.Field{
-			{
-				Name:       "id",
-				DataType:   entity.FieldTypeInt64,
-				PrimaryKey: true,
-				AutoID:     false,
-			},
-			{
-				Name:       "text",
-				DataType:   entity.FieldTypeVarChar,
-				PrimaryKey: false,
-				AutoID:     false,
-				TypeParams: map[string]string{
-					"max_length": "5000",
-				},
-			},
-			{
-				Name:     "embedding",
-				DataType: entity.FieldTypeFloatVector,
-				TypeParams: map[string]string{
-					"dim": "256",
-				},
-			},
-		},
-		EnableDynamicField: true,
-	}
+	schema := r.createSchema(orgID)
 	err := r.milvus.CreateCollection(
 		ctx, // ctx
 		schema,
@@ -124,9 +96,9 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 		return err
 	}
 	err = r.milvus.LoadCollection(
-		ctx,          // ctx
-		"yandex_gpt", // CollectionName
-		false,        // async
+		ctx,   // ctx
+		orgID, // CollectionName
+		false, // async
 	)
 	return nil
 }
@@ -143,4 +115,36 @@ func (r Repository) DeleteDoc(ctx context.Context, orgID string, id string) erro
 		return err
 	}
 	return nil
+}
+
+func (r Repository) createSchema(orgID string) *entity.Schema {
+	return &entity.Schema{
+		CollectionName: orgID,
+		Description:    "testing",
+		Fields: []*entity.Field{
+			{
+				Name:       "id",
+				DataType:   entity.FieldTypeInt64,
+				PrimaryKey: true,
+				AutoID:     false,
+			},
+			{
+				Name:       "text",
+				DataType:   entity.FieldTypeVarChar,
+				PrimaryKey: false,
+				AutoID:     false,
+				TypeParams: map[string]string{
+					"max_length": "5000",
+				},
+			},
+			{
+				Name:     "embedding",
+				DataType: entity.FieldTypeFloatVector,
+				TypeParams: map[string]string{
+					"dim": "256",
+				},
+			},
+		},
+		EnableDynamicField: true,
+	}
 }
