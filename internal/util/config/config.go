@@ -49,5 +49,6 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.Ollama.Timeout = config.Ollama.Timeout * time.Second
 	return config, nil
 }

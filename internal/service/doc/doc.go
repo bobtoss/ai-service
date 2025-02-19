@@ -4,7 +4,7 @@ import (
 	"ai-service/internal/service/doc/models"
 	"ai-service/internal/util/doc"
 	"ai-service/internal/util/errors"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
@@ -24,6 +24,7 @@ func (d *docService) SaveDoc(c echo.Context) error {
 	if err := c.Bind(&dataReq); err != nil {
 		return errors.NewBadRequestErrorRsp(err.Error())
 	}
+
 	encodedString, err := doc.DecodeBase64ToFileAndRead(dataReq.Document)
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())

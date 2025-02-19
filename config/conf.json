@@ -8,10 +8,10 @@
       "embeddings": "",
       "chat": ""
     },
-    "timeout": "60s"
+    "timeout": 60
   },
   "milvus": {
-    "host": "localhost",
+    "host": "localhost:19530",
     "port": "5432",
     "user": "postgres",
     "pass": "postgres",
