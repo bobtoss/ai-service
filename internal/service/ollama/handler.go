@@ -9,18 +9,19 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 const (
-	chat          = "/api/chat"
-	embed         = "/api/embed"
+	chat          = "chat"
+	embed         = "embeddings"
 	role          = "system"
 	system_prompt = "Вот текст документа, который ты должен использовать для ответа: "
 )
 
 type LLMService interface {
 	Answer(ctx context.Context, orgID string, docEmbeds []float32, messages []Message) (*ChatResponse, error)
-	Embed(input string) ([][]float32, error)
+	Embed(input []string) ([][][]float32, error)
 }
 
 type llmService struct {
@@ -34,7 +35,7 @@ func NewLLMService(cfg *config.Config, repo *repository.Repository) (LLMService,
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	httpClient := &http.Client{Transport: tr}
-	httpClient.Timeout = cfg.Ollama.Timeout
+	httpClient.Timeout = time.Second * 120
 
 	return &llmService{
 		config:     cfg,
@@ -47,6 +48,9 @@ func (l *llmService) handler(method string, url string, req any) ([]byte, int, e
 	body, err := json.Marshal(req)
 
 	request, err := http.NewRequest(method, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, err
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	res, err := l.client.Do(request)

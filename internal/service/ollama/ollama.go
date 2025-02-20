@@ -51,26 +51,30 @@ func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float
 	}
 }
 
-func (l *llmService) Embed(input string) ([][]float32, error) {
-	req := EmbedRequest{
-		Model: l.config.Ollama.Model,
-		Input: input,
-	}
-	url := l.config.Ollama.Url + l.config.Ollama.Endpoints[embed]
-	respBody, status, err := l.handler(http.MethodPost, url, req)
-	if err != nil {
-		return nil, err
-	}
-
-	switch status {
-	case 200:
-		var chatResponse EmbeddingResponse
-		err = json.Unmarshal(respBody, &chatResponse)
+func (l *llmService) Embed(input []string) ([][][]float32, error) {
+	var result [][][]float32
+	for _, text := range input {
+		req := EmbedRequest{
+			Model: l.config.Ollama.Model,
+			Input: text,
+		}
+		url := l.config.Ollama.Url + l.config.Ollama.Endpoints[embed]
+		respBody, status, err := l.handler(http.MethodPost, url, req)
 		if err != nil {
 			return nil, err
 		}
-		return chatResponse.Embeddings, nil
-	default:
-		return nil, errors.New(string(respBody))
+
+		switch status {
+		case 200:
+			var chatResponse EmbeddingResponse
+			err = json.Unmarshal(respBody, &chatResponse)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, chatResponse.Embeddings)
+		default:
+			return nil, errors.New(string(respBody))
+		}
 	}
+	return result, nil
 }

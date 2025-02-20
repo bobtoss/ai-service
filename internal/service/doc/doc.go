@@ -33,8 +33,7 @@ func (d *docService) SaveDoc(c echo.Context) error {
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}
-	chunks := doc.TextToChunks(encodedString)
-	err = d.repository.Vector.SaveDoc(ctx, dataReq.CompanyId, chunks, embeddings)
+	err = d.repository.Vector.SaveDoc(ctx, dataReq.CompanyId, encodedString, embeddings)
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}

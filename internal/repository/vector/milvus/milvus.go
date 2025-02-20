@@ -53,7 +53,7 @@ func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []f
 	return searchResult, err
 }
 
-func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][]float32) error {
+func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][][]float32) error {
 	ids := make([]int64, len(embeddings))
 	schema := r.createSchema(orgID)
 	err := r.milvus.CreateCollection(
@@ -66,7 +66,7 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 	}
 	idColumn := entity.NewColumnInt64("id", ids)
 	textColumn := entity.NewColumnVarChar("text", chunks)
-	embeddingColumn := entity.NewColumnFloatVector("embedding", 256, embeddings)
+	embeddingColumn := entity.NewColumnFloatVector("embedding", 256, embeddings[0])
 	_, err = r.milvus.Insert(
 		ctx,      // ctx
 		orgID,    // CollectionName

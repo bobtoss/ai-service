@@ -1,19 +1,18 @@
 package doc
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"mime"
 	"net/http"
 	"os"
 	"strings"
 
-	"archive/zip"
-	"github.com/ledongthuc/pdf"
+	"github.com/dslipak/pdf"
 )
 
 type WordXML struct {
@@ -27,10 +26,6 @@ type WordXML struct {
 	} `xml:"body"`
 }
 
-func TextToChunks(input string) []string {
-	return make([]string, 0)
-}
-
 func DecodeBase64ToString(encoded string) (string, error) {
 	decodedBytes, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -39,107 +34,137 @@ func DecodeBase64ToString(encoded string) (string, error) {
 	return string(decodedBytes), nil
 }
 
-func DecodeBase64ToFileAndRead(encoded string) (string, error) {
+func DecodeBase64ToFileAndRead(encoded string) ([]string, error) {
 	decodedBytes, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Определение MIME-типа
 	mimeType := http.DetectContentType(decodedBytes)
 
 	// Определение расширения файла
-	extension := strings.TrimPrefix(mime.TypeByExtension(mimeType), "/")
+	extension := strings.TrimPrefix(mimeType, "application/")
 	if extension == "" {
 		extension = "bin"
+	}
+	switch extension {
+	case "zip":
+		extension = "docx"
 	}
 	filename := "temp." + extension
 
 	// Записываем в файл
 	err = os.WriteFile(filename, decodedBytes, 0644)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	defer os.Remove(filename)
 
 	// Читаем содержимое файла в зависимости от его типа
 	switch mimeType {
 	case "application/pdf":
 		return readPDFFile(filename)
-	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+	case "application/zip":
 		return readWordFile(filename)
 	case "text/plain":
 		return readTextFile(filename)
 	default:
-		return "", errors.New("неподдерживаемый формат файла")
+		return nil, errors.New("неподдерживаемый формат файла")
 	}
 }
 
-func readTextFile(filename string) (string, error) {
-	content, err := ioutil.ReadFile(filename)
+func readTextFile(filename string) ([]string, error) {
+	_, err := os.ReadFile(filename)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(content), nil
+	return nil, nil
 }
 
-func readPDFFile(filename string) (string, error) {
-	f, r, err := pdf.Open(filename)
+func readPDFFile(filename string) ([]string, error) {
+	r, err := pdf.Open(filename)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer f.Close()
-	var text string
+	var chunks []string
 	for i := 0; i < r.NumPage(); i++ {
-		page := r.Page(i)
-		text += page.Content().Text[0].Font
+		page := r.Page(i + 1)
+		if page.V.IsNull() {
+			continue
+		}
+		s, err := page.GetPlainText(nil)
+		if err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, s)
 	}
-	return text, nil
+
+	return chunks, nil
 }
 
-func readWordFile(filename string) (string, error) {
-	reader, err := zip.OpenReader(filename)
+func readWordFile(filename string) ([]string, error) {
+	r, err := zip.OpenReader(filename)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer reader.Close()
+	defer r.Close()
 
-	// Find and extract word/document.xml
-	var xmlData []byte
-	for _, file := range reader.File {
+	var textContent string
+
+	for _, file := range r.File {
 		if file.Name == "word/document.xml" {
 			rc, err := file.Open()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			defer rc.Close()
 
-			xmlData, err = io.ReadAll(rc)
+			// Read XML content
+			buf := new(bytes.Buffer)
+			_, err = io.Copy(buf, rc)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
+
+			textContent = extractTextFromXML(buf.String())
 			break
 		}
 	}
 
-	if len(xmlData) == 0 {
-		return "", fmt.Errorf("word/document.xml not found in DOCX")
+	if textContent == "" {
+		return nil, fmt.Errorf("could not find 'word/document.xml' in DOCX file")
 	}
 
-	// Parse XML content
-	var wordDoc WordXML
-	err = xml.Unmarshal(xmlData, &wordDoc)
-	if err != nil {
-		return "", err
-	}
+	pages := strings.Split(textContent, "[PAGE_BREAK]")
 
-	// Extract text from paragraphs
-	var textContent string
-	for _, p := range wordDoc.Body.Paragraphs {
-		for _, t := range p.Texts {
-			textContent += t.Text + " "
+	return pages, nil
+}
+
+func extractTextFromXML(xmlContent string) string {
+	decoder := xml.NewDecoder(strings.NewReader(xmlContent))
+	var extractedText strings.Builder
+
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			break
 		}
-		textContent += "\n"
+
+		switch t := token.(type) {
+		case xml.StartElement:
+			// Detect page breaks
+			if t.Name.Local == "br" {
+				for _, attr := range t.Attr {
+					if attr.Name.Local == "type" && attr.Value == "page" {
+						extractedText.WriteString("[PAGE_BREAK]") // Mark page break
+					}
+				}
+			}
+		case xml.CharData:
+			extractedText.WriteString(string(t))
+		}
 	}
 
-	return textContent, nil
+	return extractedText.String()
 }

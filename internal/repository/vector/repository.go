@@ -8,5 +8,5 @@ import (
 type VectorDB interface {
 	GetTopK(ctx context.Context, orgID string, k int, search []float32) ([]client.SearchResult, error)
 	DeleteDoc(ctx context.Context, orgID string, id string) error
-	SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][]float32) error
+	SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][][]float32) error
 }

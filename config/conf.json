@@ -2,11 +2,11 @@
   "port": ":8080",
   "name": "ai-service",
   "ollama": {
-    "model": "",
-    "url": "localhost:11434",
+    "model": "chat-bot5",
+    "url": "http://localhost:11434",
     "endpoints": {
-      "embeddings": "",
-      "chat": ""
+      "embeddings": "/api/embed",
+      "chat": "/api/chat"
     },
     "timeout": 60
   },
