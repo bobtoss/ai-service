@@ -24,7 +24,8 @@ func Run() {
 		log.Fatalf("error parse config file: %v", err)
 		return
 	}
-	repo, err := repository.New(ctx, cfg)
+	repo, milvus, err := repository.New(ctx, cfg)
+	defer milvus.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +35,7 @@ func Run() {
 	g.Go(func() error {
 		err = api.Start(cfg.Port)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return err
+			panic(err)
 		}
 		return nil
 	})

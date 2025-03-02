@@ -50,7 +50,7 @@ func (d *docService) SaveDoc(c echo.Context) error {
 // @Produce	json
 // @Success	200				{object}
 // @Failure	500				{object}	status.SaveDoc
-// @Router /api/v1/document/{id} 	[delete]
+// @Router /api/v1/doc/{id} 	[delete]
 func (d *docService) DeleteDoc(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
@@ -83,8 +83,4 @@ func (d *docService) UpdatePriority(c echo.Context) error {
 	}
 	response := models.SaveDocResponse{Status: true}
 	return c.JSON(http.StatusOK, response)
-}
-
-func (d *docService) convert(base64 string) (string, error) {
-	return base64, nil
 }

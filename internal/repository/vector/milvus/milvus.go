@@ -7,20 +7,20 @@ import (
 	"fmt"
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
+	"strings"
 )
 
 type Repository struct {
 	milvus client.Client
 }
 
-func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.VectorDB, error) {
-	milvus, err := client.NewClient(ctx, client.Config{Address: cfg.Milvus.Host})
+func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.VectorDB, client.Client, error) {
+	milvus, err := client.NewGrpcClient(ctx, cfg.Milvus.Host)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	defer milvus.Close()
 
-	return &Repository{milvus: milvus}, nil
+	return &Repository{milvus: milvus}, milvus, nil
 }
 
 func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []float32) ([]client.SearchResult, error) {
@@ -66,7 +66,7 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 	}
 	idColumn := entity.NewColumnInt64("id", ids)
 	textColumn := entity.NewColumnVarChar("text", chunks)
-	embeddingColumn := entity.NewColumnFloatVector("embedding", 256, embeddings[0])
+	embeddingColumn := entity.NewColumnFloatVector("embedding", 3072, bind(embeddings))
 	_, err = r.milvus.Insert(
 		ctx,      // ctx
 		orgID,    // CollectionName
@@ -103,8 +103,16 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 	return nil
 }
 
+func bind(embeddings [][][]float32) [][]float32 {
+	result := make([][]float32, 0)
+	for _, embedding := range embeddings {
+		result = append(result, embedding[0])
+	}
+	return result
+}
+
 func (r Repository) DeleteDoc(ctx context.Context, orgID string, id string) error {
-	expr := fmt.Sprintf("doc_id == %s", id)
+	expr := fmt.Sprintf("id == %s", strings.Trim(id, "/"))
 	err := r.milvus.Delete(
 		ctx,   // ctx
 		orgID, // collection name
@@ -134,14 +142,14 @@ func (r Repository) createSchema(orgID string) *entity.Schema {
 				PrimaryKey: false,
 				AutoID:     false,
 				TypeParams: map[string]string{
-					"max_length": "5000",
+					"max_length": "10000",
 				},
 			},
 			{
 				Name:     "embedding",
 				DataType: entity.FieldTypeFloatVector,
 				TypeParams: map[string]string{
-					"dim": "256",
+					"dim": "3072",
 				},
 			},
 		},
