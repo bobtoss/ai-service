@@ -2,6 +2,7 @@ package router
 
 import (
 	"ai-service/internal/repository"
+	"ai-service/internal/service/chat"
 	"ai-service/internal/service/doc"
 	"ai-service/internal/util/config"
 	"github.com/labstack/echo/v4"
@@ -31,6 +32,14 @@ func (r Router) Build() *echo.Echo {
 		services.POST("", docService.SaveDoc)
 		services.PUT("/:id", docService.UpdatePriority)
 		services.DELETE(":id", docService.DeleteDoc)
+	}
+	chatService, err := chat.NewChatService(r.config, r.repository)
+	if err != nil {
+		panic(err)
+	}
+	{
+		services := api.Group("/chat")
+		services.POST("", chatService.Chat)
 	}
 	return e
 }

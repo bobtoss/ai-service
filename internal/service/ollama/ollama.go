@@ -27,6 +27,7 @@ func (l *llmService) Answer(ctx context.Context, orgID string, docEmbeds []float
 		Role:    role,
 		Content: system_prompt + documents,
 	})
+	messages[len(messages)-1], messages[len(messages)-2] = messages[len(messages)-2], messages[len(messages)-1]
 	chatRequest := ChatRequest{
 		Model:    l.config.Ollama.Model,
 		Messages: messages,
