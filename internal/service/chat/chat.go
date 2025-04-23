@@ -69,7 +69,7 @@ func (d *chatService) Chat(c echo.Context) error {
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}
-	response, err := d.llm.Answer(ctx, "test", embeddings[0][0], dataReq.Messages)
+	response, err := d.llm.Answer(ctx, "new", embeddings[0][0], dataReq.Messages)
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}
