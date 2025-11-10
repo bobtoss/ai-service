@@ -1,5 +1,5 @@
 {
-  "port": ":5201",
+  "port": ":8080",
   "name": "ai-service",
   "ollama": {
     "model": "chat-bot5",

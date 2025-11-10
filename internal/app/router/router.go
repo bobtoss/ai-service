@@ -2,10 +2,15 @@ package router
 
 import (
 	"ai-service/internal/repository"
+	"ai-service/internal/repository/postgres"
+	"ai-service/internal/service/auth"
 	"ai-service/internal/service/chat"
 	"ai-service/internal/service/doc"
 	"ai-service/internal/util/config"
+	authMiddleware "ai-service/internal/util/middleware"
+	"context"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Router struct {
@@ -20,15 +25,34 @@ func NewRouter(cfg *config.Config, repo *repository.Repository) *Router {
 	}
 }
 
-func (r Router) Build() *echo.Echo {
+func (r Router) Build(ctx context.Context) *echo.Echo {
 	e := echo.New()
-	api := e.Group("/api/v1")
+	e.Pre(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 	docService, err := doc.NewDocService(r.config, r.repository)
 	if err != nil {
 		panic(err)
 	}
+
+	db, err := postgres.NewDB(ctx, r.config.Milvus.Host)
+	if err != nil {
+		panic(err)
+	}
+	userRepo := postgres.NewUserRepository(db)
+	jwtSecret := []byte(r.config.Milvus.Pass)
+
+	svc := auth.NewService(userRepo, jwtSecret)
+	authHandler := auth.NewAuthHandler(svc)
+	authMw := authMiddleware.AuthMiddleware(svc.ParseAccessToken)
+
 	{
-		services := api.Group("/doc")
+		e.POST("/login", authHandler.Login)
+		e.POST("/refresh", authHandler.Refresh)
+		e.POST("/logout", authHandler.Logout)
+		e.POST("/register", authHandler.Register)
+	}
+	api := e.Group("", authMw)
+	{
+		services := api.Group("/upload")
 		services.POST("", docService.SaveDoc)
 		services.PUT("/:id", docService.UpdatePriority)
 		services.DELETE(":id", docService.DeleteDoc)

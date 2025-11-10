@@ -29,7 +29,7 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	api := router.NewRouter(cfg, repo).Build()
+	api := router.NewRouter(cfg, repo).Build(ctx)
 
 	g, wgCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
