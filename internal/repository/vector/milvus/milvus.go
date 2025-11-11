@@ -106,7 +106,19 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 func bind(embeddings [][][]float32) [][]float32 {
 	result := make([][]float32, 0)
 	for _, embedding := range embeddings {
-		result = append(result, embedding[0])
+		if len(embedding) == 0 {
+			result = append(result, emptyDym())
+		} else {
+			result = append(result, embedding[0])
+		}
+	}
+	return result
+}
+
+func emptyDym() []float32 {
+	var result []float32
+	for i := 0; i < 3072; i++ {
+		result = append(result, 0)
 	}
 	return result
 }

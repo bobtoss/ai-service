@@ -4,6 +4,7 @@ import (
 	"ai-service/internal/service/doc/models"
 	"ai-service/internal/util/doc"
 	"ai-service/internal/util/errors"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -35,6 +36,7 @@ func (d *docService) SaveDoc(c echo.Context) error {
 	}
 	err = d.repository.Vector.SaveDoc(ctx, dataReq.CompanyId, encodedString, embeddings)
 	if err != nil {
+		fmt.Println(err)
 		return errors.NewInternalErrorRsp(err.Error())
 	}
 	response := models.SaveDocResponse{Status: true}

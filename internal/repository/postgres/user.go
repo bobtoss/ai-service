@@ -20,8 +20,8 @@ func NewUserRepository(db *DB) *UserRepository {
 
 func (r *UserRepository) Create(ctx context.Context, user *user.User) (string, error) {
 	query := `
-		INSERT INTO users (user_id, phone, password)
-		VALUES ($1, $2, NOW(), NOW())
+		INSERT INTO service_user (user_id, phone, password)
+		VALUES ($1, $2, $3)
 		RETURNING user_id`
 	err := r.db.Pool.QueryRow(ctx, query, user.ID, user.Phone, user.Password).
 		Scan(&user.ID)
@@ -32,7 +32,7 @@ func (r *UserRepository) Create(ctx context.Context, user *user.User) (string, e
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*user.User, error) {
-	query := `SELECT user_id, phone, password FROM users WHERE user_id = $1`
+	query := `SELECT user_id, phone, password FROM service_user WHERE user_id = $1`
 	row := r.db.Pool.QueryRow(ctx, query, id)
 	u := new(user.User)
 	err := row.Scan(&u.ID, &u.ID, &u.Phone, &u.Password)
@@ -43,7 +43,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*user.User, er
 }
 
 func (r *UserRepository) GetByPhone(ctx context.Context, phone string) (*user.User, error) {
-	q := `SELECT user_id, phone, password FROM users WHERE phone = $1`
+	q := `SELECT user_id, phone, password FROM service_user WHERE phone = $1`
 	row := r.db.Pool.QueryRow(ctx, q, phone)
 	u := &user.User{}
 	if err := row.Scan(&u.ID, &u.Phone, &u.Password); err != nil {
@@ -53,26 +53,26 @@ func (r *UserRepository) GetByPhone(ctx context.Context, phone string) (*user.Us
 }
 
 func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.User, error) {
-	query := `SELECT user_id, phone, password FROM users LIMIT $1 OFFSET $2`
+	query := `SELECT user_id, phone, password FROM service_user LIMIT $1 OFFSET $2`
 	rows, err := r.db.Pool.Query(ctx, query, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("list users: %w", err)
+		return nil, fmt.Errorf("list service_user: %w", err)
 	}
 	defer rows.Close()
 
-	var users []*user.User
+	var service_user []*user.User
 	for rows.Next() {
 		u := new(user.User)
 		if err := rows.Scan(&u.ID, &u.ID, &u.Phone, &u.Password); err != nil {
 			return nil, err
 		}
-		users = append(users, u)
+		service_user = append(service_user, u)
 	}
-	return users, nil
+	return service_user, nil
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM users WHERE user_id = $1`
+	query := `DELETE FROM service_user WHERE user_id = $1`
 	_, err := r.db.Pool.Exec(ctx, query, id)
 	return err
 }

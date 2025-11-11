@@ -8,6 +8,7 @@ import (
 	"ai-service/internal/service/doc"
 	"ai-service/internal/util/config"
 	authMiddleware "ai-service/internal/util/middleware"
+	"ai-service/internal/util/validator"
 	"context"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,18 +28,19 @@ func NewRouter(cfg *config.Config, repo *repository.Repository) *Router {
 
 func (r Router) Build(ctx context.Context) *echo.Echo {
 	e := echo.New()
+	e.Validator = validator.New()
 	e.Pre(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 	docService, err := doc.NewDocService(r.config, r.repository)
 	if err != nil {
 		panic(err)
 	}
 
-	db, err := postgres.NewDB(ctx, r.config.Milvus.Host)
+	db, err := postgres.NewDB(ctx, r.config.DB.DSN())
 	if err != nil {
 		panic(err)
 	}
 	userRepo := postgres.NewUserRepository(db)
-	jwtSecret := []byte(r.config.Milvus.Pass)
+	jwtSecret := []byte(r.config.JWTSecret)
 
 	svc := auth.NewService(userRepo, jwtSecret)
 	authHandler := auth.NewAuthHandler(svc)

@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Port   string `json:"port"`
-	Name   string `json:"name"`
-	Ollama Ollama `json:"ollama"`
-	Milvus struct {
+	Port      string `json:"port"`
+	Name      string `json:"name"`
+	JWTSecret string `json:"jwt_secret"`
+	Ollama    Ollama `json:"ollama"`
+	Milvus    struct {
 		Host       string `json:"host"`
 		Port       string `json:"port"`
 		User       string `json:"user"`
@@ -22,6 +23,25 @@ type Config struct {
 		OpenConns  int    `json:"open_conns"`
 		DriverName string `json:"driver_name"`
 	} `json:"milvus"`
+	DB DBConfig `json:"db"`
+}
+
+type DBConfig struct {
+	Host         string `json:"host"`
+	Port         int    `json:"port"`
+	User         string `json:"user"`
+	Password     string `json:"password"`
+	DBName       string `json:"db_name"`
+	SSLMode      string `json:"ssl_mode"`
+	MaxOpenConns int    `json:"max_open_conns"`
+	MaxIdleConns int    `json:"max_idle_conns"`
+}
+
+func (cfg *DBConfig) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
+	)
 }
 
 type Ollama struct {
