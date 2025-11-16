@@ -24,6 +24,7 @@ func NewMilvusRepository(ctx context.Context, cfg *config.Config) (vector.Vector
 }
 
 func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []float32) ([]client.SearchResult, error) {
+	orgID = "_" + strings.ReplaceAll(orgID, "-", "")
 	sp, _ := entity.NewIndexIvfFlatSearchParam( // NewIndex*SearchParam func
 		10, // searchParam
 	)
@@ -53,20 +54,48 @@ func (r Repository) GetTopK(ctx context.Context, orgID string, k int, search []f
 	return searchResult, err
 }
 
-func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, embeddings [][][]float32) error {
-	ids := make([]int64, len(embeddings))
-	schema := r.createSchema(orgID)
-	err := r.milvus.CreateCollection(
-		ctx, // ctx
-		schema,
-		2, // shardNum
-	)
+func (r Repository) SaveDoc(ctx context.Context, orgID, docID string, chunks []string, embeddings [][][]float32) error {
+	orgID = "_" + strings.ReplaceAll(orgID, "-", "")
+	ids := make([]string, len(embeddings))
+	for i, _ := range ids {
+		ids[i] = docID
+	}
+	idColumn := entity.NewColumnVarChar("id", ids)
+	textColumn := entity.NewColumnVarChar("text", chunks)
+	embeddingColumn := entity.NewColumnFloatVector("embedding", 3072, bind(embeddings))
+
+	ok, err := r.milvus.HasCollection(ctx, orgID)
 	if err != nil {
 		return err
 	}
-	idColumn := entity.NewColumnInt64("id", ids)
-	textColumn := entity.NewColumnVarChar("text", chunks)
-	embeddingColumn := entity.NewColumnFloatVector("embedding", 3072, bind(embeddings))
+	if !ok {
+		schema := r.createSchema(orgID)
+		err := r.milvus.CreateCollection(
+			ctx, // ctx
+			schema,
+			2, // shardNum
+		)
+		if err != nil {
+			return err
+		}
+		idx, err := entity.NewIndexIvfFlat( // NewIndex func
+			entity.L2, // metricType
+			1024,      // ConstructParams
+		)
+		if err != nil {
+			return err
+		}
+		err = r.milvus.CreateIndex(
+			ctx,         // ctx
+			orgID,       // CollectionName
+			"embedding", // fieldName
+			idx,         // entity.Index
+			false,       // async
+		)
+		if err != nil {
+			return err
+		}
+	}
 	_, err = r.milvus.Insert(
 		ctx,      // ctx
 		orgID,    // CollectionName
@@ -74,23 +103,6 @@ func (r Repository) SaveDoc(ctx context.Context, orgID string, chunks []string, 
 		idColumn, // columnarData
 		textColumn,
 		embeddingColumn, // columnarData
-	)
-	if err != nil {
-		return err
-	}
-	idx, err := entity.NewIndexIvfFlat( // NewIndex func
-		entity.L2, // metricType
-		1024,      // ConstructParams
-	)
-	if err != nil {
-		return err
-	}
-	err = r.milvus.CreateIndex(
-		ctx,         // ctx
-		orgID,       // CollectionName
-		"embedding", // fieldName
-		idx,         // entity.Index
-		false,       // async
 	)
 	if err != nil {
 		return err
@@ -124,7 +136,8 @@ func emptyDym() []float32 {
 }
 
 func (r Repository) DeleteDoc(ctx context.Context, orgID string, id string) error {
-	expr := fmt.Sprintf("id == %s", strings.Trim(id, "/"))
+	orgID = "_" + strings.ReplaceAll(orgID, "-", "")
+	expr := fmt.Sprintf("id == '%s'", strings.Trim(id, "/"))
 	err := r.milvus.Delete(
 		ctx,   // ctx
 		orgID, // collection name
@@ -144,9 +157,12 @@ func (r Repository) createSchema(orgID string) *entity.Schema {
 		Fields: []*entity.Field{
 			{
 				Name:       "id",
-				DataType:   entity.FieldTypeInt64,
+				DataType:   entity.FieldTypeVarChar,
 				PrimaryKey: true,
 				AutoID:     false,
+				TypeParams: map[string]string{
+					"max_length": "10000",
+				},
 			},
 			{
 				Name:       "text",

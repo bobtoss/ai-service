@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
@@ -37,8 +36,8 @@ func AuthMiddleware(parseFn func(token string) (string, error)) echo.MiddlewareF
 }
 
 // FromContext helper
-func UserIDFromContext(ctx context.Context) (string, bool) {
-	v := ctx.Value(UserIDContextKey)
+func UserIDFromContext(ctx echo.Context) (string, bool) {
+	v := ctx.Get(UserIDContextKey)
 	if v == nil {
 		return "", false
 	}

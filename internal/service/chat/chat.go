@@ -5,6 +5,7 @@ import (
 	"ai-service/internal/service/ollama"
 	"ai-service/internal/util/config"
 	"ai-service/internal/util/errors"
+	"ai-service/internal/util/middleware"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -51,15 +52,20 @@ func NewChatService(cfg *config.Config, repo *repository.Repository) (ChatServic
 // Chat
 //
 // @Description Chat
-// @Summary	Save document in milvus
-// @Tags doc
+// @Summary	Chat with llm
+// @Tags chat
 // @Accept json
 // @Produce	json
-// @Success	200				{object}		models.SaveDocResponse
-// @Failure	500				{object}	status.SaveDoc
+// @Param		request	body		ChatRequest	true	"body param"
+// @Success	200				{object}		ChatRequest
 // @Router /api/v1/chat 	[post]
 func (d *chatService) Chat(c echo.Context) error {
 	ctx := c.Request().Context()
+	uid, ok := middleware.UserIDFromContext(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, "user not found")
+	}
+
 	var dataReq ChatRequest
 	if err := c.Bind(&dataReq); err != nil {
 		return errors.NewBadRequestErrorRsp(err.Error())
@@ -69,7 +75,7 @@ func (d *chatService) Chat(c echo.Context) error {
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}
-	response, err := d.llm.Answer(ctx, "new", embeddings[0][0], dataReq.Messages)
+	response, err := d.llm.Answer(ctx, uid, embeddings[0][0], dataReq.Messages)
 	if err != nil {
 		return errors.NewInternalErrorRsp(err.Error())
 	}

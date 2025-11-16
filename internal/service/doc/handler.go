@@ -2,6 +2,7 @@ package doc
 
 import (
 	"ai-service/internal/repository"
+	"ai-service/internal/repository/postgres"
 	"ai-service/internal/service/ollama"
 	"ai-service/internal/util/config"
 	"bytes"
@@ -19,6 +20,7 @@ const (
 
 type DocService interface {
 	SaveDoc(c echo.Context) error
+	ListDoc(c echo.Context) error
 	DeleteDoc(c echo.Context) error
 	UpdatePriority(c echo.Context) error
 }
@@ -27,10 +29,11 @@ type docService struct {
 	config     *config.Config
 	llm        ollama.LLMService
 	repository *repository.Repository
+	postgres   *postgres.DocumentRepository
 	client     *http.Client
 }
 
-func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService, error) {
+func NewDocService(cfg *config.Config, repo *repository.Repository, postgres *postgres.DocumentRepository) (DocService, error) {
 	llm, err := ollama.NewLLMService(cfg, repo)
 	if err != nil {
 		return nil, err
@@ -46,6 +49,7 @@ func NewDocService(cfg *config.Config, repo *repository.Repository) (DocService,
 		repository: repo,
 		llm:        llm,
 		client:     httpClient,
+		postgres:   postgres,
 	}, nil
 }
 

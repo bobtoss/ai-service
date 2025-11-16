@@ -12,7 +12,7 @@ type AuthHandler struct {
 
 func NewAuthHandler(svc *Service) *AuthHandler { return &AuthHandler{svc: svc} }
 
-type loginReq struct {
+type LoginReq struct {
 	Phone    string `json:"phone"`
 	Password string `json:"password"`
 }
@@ -23,13 +23,23 @@ type tokenResp struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 }
 
-type registerReq struct {
+type RegisterReq struct {
 	Phone    string `json:"phone" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }
 
+// Login
+//
+// @Description Auth
+// @Summary	login
+// @Tags auth
+// @Accept json
+// @Produce	json
+// @Param		request	body		LoginReq	true	"body param"
+// @Success	200				{object}		LoginReq
+// @Router /login	[post]
 func (h *AuthHandler) Login(c echo.Context) error {
-	var req loginReq
+	var req LoginReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid request"})
 	}
@@ -49,9 +59,18 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	})
 }
 
-// POST /register
+// Register
+//
+// @Description Auth
+// @Summary	register
+// @Tags auth
+// @Accept json
+// @Produce	json
+// @Param		request	body		RegisterReq	true	"body param"
+// @Success	200			{object}		RegisterReq
+// @Router /register	[post]
 func (h *AuthHandler) Register(c echo.Context) error {
-	var req registerReq
+	var req RegisterReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid request"})
 	}
